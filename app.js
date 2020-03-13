@@ -28,27 +28,53 @@ const PersonList = [{
   }
 ]
 
-var PersonSchema = new GraphQLObjectType({
+const CommentList = [{
+  "_id": 1,
+  "text": "Tesst",
+  "user_id": 1001
+},
+{
+  "_id": 2,
+  "text": "Tesst",
+  "user_id": 1001
+}
+]
+var CommentOutPut = new GraphQLObjectType({
+  name: 'Comment',
+  fields: {
+    _id: { type: GraphQLInt },
+    text: { type: GraphQLString },
+    user_id: { type: GraphQLInt }
+  }
+});
+var PersonOutput = new GraphQLObjectType({
   name: 'Person',
   fields: {
     _id: { type: GraphQLInt },
     name: { type: GraphQLString },
-    age: { type: GraphQLInt }
+    age: { type: GraphQLInt },
+    comments: {
+      type: new GraphQLList(CommentOutPut),
+      resolve: (personObject) => {
+        return CommentList.filter(comment => comment.user_id == personObject._id);
+      }
+    }
   }
 });
+
+
 
 var PersonQuery = new GraphQLObjectType({
   name: 'PersonQuery',
   fields: {
     people: { 
-      type: new GraphQLList(PersonSchema),
+      type: new GraphQLList(PersonOutput),
       args: {
         _id: { type: GraphQLInt },
         name: { type: GraphQLString },
         age: { type: GraphQLInt }
       },
       resolve: (_, {_id, name, age}) => {
-        let query;
         if (_id){
           console.log(Array.from(PersonList).filter(person => person._id ==_id))
           return Array.from(PersonList).filter(person => person._id ==_id)
@@ -68,6 +94,29 @@ var PersonQuery = new GraphQLObjectType({
           return PersonList
         }
       }
+    },
+    comments: {
+      type: new GraphQLList(CommentOutPut),
+      args: {
+        _id: { type: GraphQLInt },
+        text: { type: GraphQLString },
+        user_id: { type: GraphQLInt }
+      },
+      resolve: (_,{_id, text, user_id}) => {
+        if(_id){
+          return CommentList.filter(comment => comment._id == _id)
+        }
+        else if(text){
+          return CommentList.filter(comment => comment.text == text)
+        }
+        else if(user_id){
+          return CommentList.filter(comment => comment.user_id == user_id)
+        }
+        else
+        {
+          return CommentList
+        }
+      }
     }
   }
 })
@@ -76,7 +125,7 @@ var MutationObject = new GraphQLObjectType({
   name: 'PersonMutation',
   fields: {
     create: {
-      type: PersonSchema,
+      type: PersonOutput,
       args: {
         name: { type: new GraphQLNonNull(GraphQLString) },
         age: { type: GraphQLInt }
@@ -87,7 +136,7 @@ var MutationObject = new GraphQLObjectType({
       }
     },
     delete: {
-      type: PersonSchema,
+      type: PersonOutput,
       args: {
         _id: { 
           type: new GraphQLNonNull(GraphQLInt) 
